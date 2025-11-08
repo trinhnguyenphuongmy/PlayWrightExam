@@ -3,15 +3,39 @@ import * as assistance from "../../utils/common-utils";
 import { Product } from "../../data/objects/Product";
 
 export class ShopPage extends GeneralPage {
+  // -----------------------
+  // ✅ Locators (Top of class)
+  // -----------------------
+
+  private readonly productListItems = this.page.getByRole("listitem");
+  private readonly productCards = this.page.locator("li.product");
+  private readonly addToBasketBtn = "a.button"; // generic add to basket button inside product
+  private readonly productNameSelector = "h3";
+  private readonly productPriceSelector = ".price .amount";
+  private readonly categorySidebar = this.page.locator(".product-categories");
+  private readonly cartIcon = this.page.locator("li.wpmenucartli a");
+
   private readonly slider = this.page.locator(".price_slider");
-  private readonly handles = this.slider.locator(".ui-slider-handle");
-  private readonly minPriceLbl = this.page.locator("#min_price");
-  private readonly maxPriceLbl = this.page.locator("#max_price");
+  private readonly sliderHandles = this.slider.locator(".ui-slider-handle");
+
+  private readonly minPriceHiddenLbl = this.page.locator("#min_price");
+  private readonly maxPriceHiddenLbl = this.page.locator("#max_price");
+
   private readonly sortCombobox = this.page.getByRole("combobox");
 
+  // -----------------------
+  // ✅ Actions
+  // -----------------------
+
+  async goto() {
+    await this.navigateTo("/shop");
+  }
+
+  /**
+   * Add product by name
+   */
   async addProductToBasket(productName: string) {
-    const targetAddBtn = await this.page
-      .getByRole("listitem")
+    await this.productListItems
       .filter({ hasText: productName })
       .getByRole("link")
       .nth(1)
@@ -19,43 +43,39 @@ export class ShopPage extends GeneralPage {
   }
 
   /**
-   * Add random product to basket
+   * Add a random product to basket
    */
   async addRandomProductToBasket() {
-    // get all product listitems
-    const products = await this.page.getByRole("listitem").all();
-
-    // choose a random index
+    const products = await this.productListItems.all();
     const randomIndex = Math.floor(Math.random() * products.length);
 
     console.log(`Adding product at index: ${randomIndex}`);
 
-    // click the Add to basket button inside that product
     await products[randomIndex]
       .getByRole("button", { name: /add to basket/i })
       .click();
   }
 
+  /**
+   * Return any 2 different random categories from list
+   */
   async getTwoDifferentRandomCategories(
     categories: string[]
   ): Promise<string[]> {
-    if (categories.length < 2) {
+    if (categories.length < 2)
       throw new Error("Input array must contain at least 2 categories.");
+
+    const pickedIndexes = new Set<number>();
+    while (pickedIndexes.size < 2) {
+      pickedIndexes.add(Math.floor(Math.random() * categories.length));
     }
 
-    const usedIndexes = new Set<number>();
-
-    while (usedIndexes.size < 2) {
-      const randomIndex = Math.floor(Math.random() * categories.length);
-      usedIndexes.add(randomIndex);
-    }
-
-    return [...usedIndexes].map((index) => categories[index]);
+    return [...pickedIndexes].map((index) => categories[index]);
   }
 
   /**
-   * Adds one random product from each of N different categories.
-   * Returns the list of all added products.
+   * Adds random products from different categories (count)
+   * Returns the list of selected Product objects
    */
   async addRandomProductsFromDifferentCategories(
     categories: string[],
@@ -70,7 +90,6 @@ export class ShopPage extends GeneralPage {
     const selectedProducts: Product[] = [];
     const usedIndexes = new Set<number>();
 
-    // pick distinct categories randomly
     while (usedIndexes.size < count) {
       usedIndexes.add(Math.floor(Math.random() * categories.length));
     }
@@ -78,187 +97,131 @@ export class ShopPage extends GeneralPage {
     for (const index of usedIndexes) {
       const category = categories[index];
 
-      // Open category
-
-      await this.page
-        .locator(".product-categories")
+      // Open category in sidebar
+      await this.categorySidebar
         .getByRole("link", { name: new RegExp(category, "i") })
         .first()
         .click();
 
-      // Get products in this category
-      const productCards = await this.page.locator("li.product").all();
+      const productCards = await this.productCards.all();
       const randomIndex = Math.floor(Math.random() * productCards.length);
       const productCard = productCards[randomIndex];
 
-      // Extract product details
-      await assistance.sleep(3000);
-      const productName = (await productCard.locator("h3").innerText()).trim();
+      // Extract product name & listing price
+      const productName = (
+        await productCard.locator(this.productNameSelector).innerText()
+      ).trim();
+      const displayedPrice = (
+        await productCard.locator(this.productPriceSelector).first().innerText()
+      )
+        .replace(/[₹,]/g, "")
+        .trim();
 
-      const productPriceText = await productCard
-        .locator(".price .amount")
-        .first()
-        .innerText();
-      const productPrice = productPriceText.replace(/[₹,]/g, "").trim();
-
+      // Add to basket
+      await productCard.locator(this.addToBasketBtn).click();
       await assistance.sleep(2000);
-      await productCard.getByRole("link", { name: /add to basket/i }).click();
 
-      // After adding, go to cart page to get accurate unit price
-      await assistance.sleep(3000);
-      await this.page.locator("li.wpmenucartli a").click(); // redirect to basket page
+      // Open cart to confirm pricing
+      await this.cartIcon.click();
+      await assistance.sleep(2000);
 
       const cartRow = this.page.locator("tr.cart_item", {
         hasText: productName,
       });
 
-      const unitPriceText = await cartRow
-        .locator("td.product-price .amount")
-        .innerText();
-
-      await assistance.sleep(2000);
-      const unitPrice = unitPriceText.replace(/[₹,]/g, "").trim();
+      const unitPrice = Number(
+        (await cartRow.locator("td.product-price .amount").innerText())
+          .replace(/[₹,]/g, "")
+          .trim()
+      );
 
       const quantity = Number(
         await cartRow.locator("td.product-quantity input.qty").inputValue()
       );
 
-      // Save full product info
       selectedProducts.push(
-        new Product(productName, productPrice, unitPrice, quantity)
+        new Product(productName, displayedPrice, String(unitPrice), quantity)
       );
 
-      await assistance.sleep(3000);
-      await this.page.goBack(); // return to products list
+      // return to shop
+      await this.page.goBack();
     }
 
     return selectedProducts;
   }
 
   /**
-   * Navigate to Shop page
+   * Verify prices sorted high → low
    */
-
-  async goto() {
-    await this.navigateTo("/shop");
-  }
-
-  /**
-   * Select product category
-   */
-
-  async selectProductCategory(targetItem: string): Promise<void> {
-    const targetCatergory = this.page.getByRole("link", {
-      name: targetItem,
-      exact: true,
-    });
-    await targetCatergory.click();
-    await this.waitForPageLoadedCompletely();
-  }
-
   async verifyPricesHighToLow(): Promise<boolean> {
-    // Select all LI elements that contain product price
-    const prices = await this.page.$$eval(
-      "ul.products li .price",
-      (priceNodes) => {
-        return priceNodes.map((node) => {
-          // Look for discounted price (<ins>) first, else take normal price
-          const priceEl =
-            node.querySelector("ins .woocommerce-Price-amount") ||
-            node.querySelector(".woocommerce-Price-amount");
+    const prices = await this.page.$$eval("ul.products li .price", (nodes) =>
+      nodes.map((node) => {
+        const priceEl =
+          node.querySelector("ins .woocommerce-Price-amount") ||
+          node.querySelector(".woocommerce-Price-amount");
 
-          // Extract number, remove ₹ and convert to float
-          if (!priceEl) return 0; // fallback if not found
-
-          return parseFloat(priceEl.textContent!.replace(/[₹,]/g, ""));
-        });
-      }
+        return priceEl
+          ? parseFloat(priceEl.textContent!.replace(/[₹,]/g, ""))
+          : 0;
+      })
     );
 
-    console.log("Captured Prices:", prices);
-
-    // Copy array and sort it descending (high → low)
-    const sortedPrices = [...prices].sort((a, b) => b - a);
-
-    // Return true/false if actual == expected order
-    return JSON.stringify(prices) === JSON.stringify(sortedPrices);
+    const sorted = [...prices].sort((a, b) => b - a);
+    return JSON.stringify(prices) === JSON.stringify(sorted);
   }
 
   /**
-   * Verify all product names contain the given keyword
+   * Verify all product titles contain keyword (case-insensitive)
    */
   async verifyProductTitlesContain(keyword: string): Promise<boolean> {
-    // Grab all product titles inside the product list
-    const productTitles = await this.page.$$eval(
-      "ul.products li h3",
-      (titleNodes) => titleNodes.map((node) => node.textContent?.trim() || "")
+    const titles = await this.page.$$eval("ul.products li h3", (nodes) =>
+      nodes.map((node) => node.textContent?.trim() || "")
     );
 
-    console.log("Product Titles Found:", productTitles);
-
-    // Case-insensitive comparison
-    const allContain = productTitles.every((title) =>
+    return titles.every((title) =>
       title.toLowerCase().includes(keyword.toLowerCase())
     );
-
-    return allContain;
   }
 
-  /**
-   * Select sort option
-   */
-
   async selectSortOption(targetOption: string): Promise<void> {
-    await this.sortCombobox.click();
-    await assistance.sleep(1000);
     await this.sortCombobox.selectOption(targetOption);
     await this.waitForPageLoadedCompletely();
   }
 
   /**
-   * Điều chỉnh thanh trượt giá theo giá trị mong muốn.
-   * @param {import('@playwright/test').Page} page - Đối tượng trang Playwright
-   * @param {number} targetMin - Giá trị min mong muốn (VD: 200)
-   * @param {number} targetMax - Giá trị max mong muốn (VD: 400)
+   * Adjust price slider to given min/max
    */
   async adjustPriceSliderByValue(
     targetMin: number,
     targetMax: number
   ): Promise<void> {
-    // Đợi slider sẵn sàng
     await this.slider.waitFor();
 
-    // Lấy thông tin min/max từ input ẩn
     const minPrice = parseFloat(
-      (await this.minPriceLbl.getAttribute("data-min")) || ""
+      (await this.minPriceHiddenLbl.getAttribute("data-min")) || ""
     );
     const maxPrice = parseFloat(
-      (await this.maxPriceLbl.getAttribute("data-max")) || ""
+      (await this.maxPriceHiddenLbl.getAttribute("data-max")) || ""
     );
 
-    // Lấy kích thước thanh trượt
-    const box = await this.slider.boundingBox();
-    if (!box) throw new Error("Không tìm thấy slider trên trang.");
+    const sliderBox = await this.slider.boundingBox();
+    if (!sliderBox) throw new Error("Slider not found.");
 
-    const centerY = box.y + box.height / 2;
+    const centerY = sliderBox.y + sliderBox.height / 2;
 
-    // Tính vị trí theo giá trị (tỷ lệ theo min/max)
-    const leftPercent = (targetMin - minPrice) / (maxPrice - minPrice);
-    const rightPercent = (targetMax - minPrice) / (maxPrice - minPrice);
+    const leftX =
+      sliderBox.x +
+      sliderBox.width * ((targetMin - minPrice) / (maxPrice - minPrice));
+    const rightX =
+      sliderBox.x +
+      sliderBox.width * ((targetMax - minPrice) / (maxPrice - minPrice));
 
-    const leftX = box.x + box.width * leftPercent;
-    const rightX = box.x + box.width * rightPercent;
-
-    // Kéo handle trái
-    const leftHandle = this.handles.nth(0);
-    await leftHandle.hover();
+    await this.sliderHandles.nth(0).hover();
     await this.page.mouse.down();
     await this.page.mouse.move(leftX, centerY, { steps: 15 });
     await this.page.mouse.up();
 
-    // Kéo handle phải
-    const rightHandle = this.handles.nth(1);
-    await rightHandle.hover();
+    await this.sliderHandles.nth(1).hover();
     await this.page.mouse.down();
     await this.page.mouse.move(rightX, centerY, { steps: 15 });
     await this.page.mouse.up();

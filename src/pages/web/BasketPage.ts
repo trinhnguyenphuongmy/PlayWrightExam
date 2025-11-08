@@ -1,118 +1,134 @@
 import { Product } from "../../data/objects/Product";
+import * as assistance from "../../utils/common-utils";
 import { GeneralPage } from "./GeneralPage";
 
 export class BasketPage extends GeneralPage {
+  // -----------------------
+  // ✅ Locators (Top of class)
+  // -----------------------
+  private readonly cartTableRows = this.page.locator(
+    "table.shop_table.cart tbody tr.cart_item"
+  );
+
+  private readonly productNameCell = "td.product-name a";
+  private readonly productUnitPriceCell = "td.product-price .amount";
+  private readonly productQtyInput = "td.product-quantity input.qty";
+  private readonly productSubtotalCell = "td.product-subtotal .amount";
+
+  private readonly taxAmountRow = this.page.locator(".tax-rate .amount");
+  private readonly totalAmountRow = this.page.locator(".order-total .amount");
+
   private readonly updateBasketBtn = this.page.getByRole("button", {
     name: "Update Basket",
   });
+
   private readonly applyCouponBtn = this.page.getByRole("button", {
     name: "Apply Coupon",
   });
 
-  private readonly proceedToChkoutBtn = this.page.getByRole("link", {
+  private readonly proceedToCheckoutBtn = this.page.getByRole("link", {
     name: "Proceed to Checkout",
   });
 
-  async proceedToCheckOut() {
-    await this.proceedToChkoutBtn.click();
-  }
+  // -----------------------
+  // ✅ Actions
+  // -----------------------
 
   async open() {
     await this.cartLnk.click();
   }
 
+  async proceedToCheckout() {
+    await this.proceedToCheckoutBtn.click();
+  }
+
+  /**
+   * ✅ Verify each product in cart matches expected Product[] list
+   *    - Name
+   *    - Unit Price
+   *    - Quantity
+   *    - Subtotal (unit price * quantity)
+   */
   async cartProductsMatch(expectedProducts: Product[]): Promise<boolean> {
     try {
-      const cartRows = this.page.locator(
-        "table.shop_table.cart tbody tr.cart_item"
-      );
-
-      const rowCount = await cartRows.count();
+      const rowCount = await this.cartTableRows.count();
       if (rowCount !== expectedProducts.length) return false;
 
       for (let i = 0; i < expectedProducts.length; i++) {
         const expected = expectedProducts[i];
-        const row = cartRows.nth(i);
+        const row = this.cartTableRows.nth(i);
+
+        await assistance.sleep(500); // stability wait
 
         const cartProductName = (
-          await row.locator("td.product-name a").innerText()
+          await row.locator(this.productNameCell).innerText()
         ).trim();
 
-        const cartUnitPrice = (
-          await row.locator("td.product-price .amount").innerText()
-        )
-          .replace(/[₹,]/g, "")
-          .trim();
-
-        const cartQuantity = Number(
-          await row.locator("td.product-quantity input.qty").inputValue()
+        const cartUnitPrice = Number(
+          (await row.locator(this.productUnitPriceCell).innerText())
+            .replace(/[₹,]/g, "")
+            .trim()
         );
 
-        const cartSubtotal = (
-          await row.locator("td.product-subtotal .amount").innerText()
-        )
-          .replace(/[₹,]/g, "")
-          .trim();
+        const cartQuantity = Number(
+          await row.locator(this.productQtyInput).inputValue()
+        );
+
+        const cartSubtotal = Number(
+          (await row.locator(this.productSubtotalCell).innerText())
+            .replace(/[₹,]/g, "")
+            .trim()
+        );
 
         const expectedSubtotal =
           Number(expected.getUnitPrice()) * expected.getQuantity();
 
-        // If any mismatch found → return false immediately
         if (
           cartProductName !== expected.getProductName() ||
-          Number(cartUnitPrice) !== Number(expected.getUnitPrice()) ||
+          cartUnitPrice !== Number(expected.getUnitPrice()) ||
           cartQuantity !== expected.getQuantity() ||
-          Number(cartSubtotal) !== expectedSubtotal
+          cartSubtotal !== expectedSubtotal
         ) {
           return false;
         }
       }
-
-      return true; // all matched
+      return true;
     } catch (err) {
       console.error("Error validating cart:", err);
       return false;
     }
   }
 
+  /**
+   * ✅ Reads tax value from basket summary
+   */
   async getTaxFromUI(): Promise<number> {
-    const taxLocator = this.page.locator(".tax-rate .amount");
+    if ((await this.taxAmountRow.count()) === 0) return 0;
 
-    if ((await taxLocator.count()) === 0) return 0; // no tax shown
-
-    const taxText = await taxLocator.innerText();
-
-    return Number(taxText.replace(/[₹,]/g, "").trim());
+    return Number(
+      (await this.taxAmountRow.innerText()).replace(/[₹,]/g, "").trim()
+    );
   }
 
+  /**
+   * ✅ Verifies: Total = Subtotal + Tax
+   */
   async verifyCartTotals(subtotal: number, tax: number): Promise<boolean> {
     try {
-      // Calculate expected total internally
       const expectedTotal = subtotal + tax;
 
-      // Get Total from UI
       const uiTotal = Number(
-        (await this.page.locator(".order-total .amount").innerText())
-          .replace(/[₹,]/g, "")
-          .trim()
+        (await this.totalAmountRow.innerText()).replace(/[₹,]/g, "").trim()
       );
 
-      // Debug logs (useful during failures)
-      console.log(`Subtotal (input): ${subtotal}`);
-      console.log(`Tax (input): ${tax}`);
-      console.log(`Expected Total (subtotal + tax): ${expectedTotal}`);
+      console.log(`Subtotal: ${subtotal}`);
+      console.log(`Tax: ${tax}`);
+      console.log(`Expected Total: ${expectedTotal}`);
       console.log(`UI Total: ${uiTotal}`);
 
-      // Compare expected vs UI total
-      if (uiTotal !== expectedTotal) {
-        console.log("Cart Total DOES NOT match expected calculation.");
-        return false;
-      }
-
-      console.log("✅ Cart Total Verified Successfully.");
-      return true;
+      return uiTotal === expectedTotal;
     } catch (error) {
-      console.error("⚠️ Error validating cart totals:", error);
+      console.error("Error validating cart totals:", error);
       return false;
     }
   }
