@@ -1,3 +1,5 @@
+import { Product } from "../data/objects/Product";
+
 export async function pickRandomIndex(maxIndex: number): Promise<number> {
   return Math.floor(Math.random() * maxIndex);
 }
@@ -57,4 +59,13 @@ export async function getUsernameFromEmail(email: string): Promise<string> {
 
 export async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function getTotalPriceOfProducts(products: Product[]): number {
+  return products.reduce((total, product) => {
+    const price = Number(product.getUnitPrice()); // unit price (string → number)
+    const quantity = product.getQuantity();
+
+    return total + price * quantity;
+  }, 0);
 }

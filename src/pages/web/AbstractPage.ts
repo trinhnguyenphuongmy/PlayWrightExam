@@ -8,6 +8,10 @@ export abstract class AbstractPage {
     this.page = page;
   }
 
+  public get getPage(): Page {
+    return this.page;
+  }
+
   async openAUT(): Promise<void> {
     await this.page.goto("/");
   }
@@ -19,6 +23,7 @@ export abstract class AbstractPage {
   async clickLinkButton(linkBtnName: string): Promise<void> {
     const targetPageBtn = this.page.getByRole("link", { name: linkBtnName });
     await targetPageBtn.click();
+    await this.waitForPageLoadedCompletely();
   }
 
   async waitForPageLoadedCompletely() {
