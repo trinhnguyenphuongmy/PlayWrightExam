@@ -1,0 +1,22 @@
+{
+  "name": "playwrighttraining",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:chrome": "npx playwright test tests/web --project=Chrome",
+    "test:chromium": "npx playwright test tests/web --project=Chromium",
+    "test:firefox": "npx playwright test tests/web --project=Firefox",
+    "test:webkit": "npx playwright test tests/web --project=WebKit",
+    "test:report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "@types/node": "^24.6.0"
+  }
+}
