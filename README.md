@@ -6,10 +6,10 @@ This project is an automation testing framework built with Playwright for end-to
 It follows the Page Object Model (POM) design pattern to ensure better code maintenance, scalability, and readability.
 
 ## 2. Setup Guideline
-> Install Playwright
+Install Playwright
 
 Open your terminal in the project root directory and run:
-npx playwright install
+> npx playwright install
 
 This command installs Playwright browsers and necessary dependencies.
 
@@ -32,7 +32,7 @@ Playwright supports parallel execution by default, allowing multiple test files 
 Default Parallel Execution
 
 When you run:
-npx playwright test
+> npx playwright test
 Playwright will automatically run multiple tests in parallel based on your system’s CPU cores.
 
 ### Customizing Parallelism
@@ -43,26 +43,26 @@ In playwright.config.ts:
 workers: 4
 
 Or override it directly from the command line:
-npx playwright test --workers=4
+> npx playwright test --workers=4
 
 ### Run a test folder
 
 To run all tests in the /tests/web folder in parallel:
-npx playwright test tests/web
+> npx playwright test tests/web
 
 ## 4. Framework Structure
 
-├── playwright.config.ts     # Global Playwright configuration
+├── playwright.config.ts          # Global Playwright configuration
 
-├── src/tests/web        # Test case spec TypeScript files
+├── src/tests/web          # Test case spec TypeScript files
 
-├── src/pages/web       # Page Object Model (POM) files for web pages
+├── src/pages/web          # Page Object Model (POM) files for web pages
 
-├── src/helpers        # Custom helper functions and libraries
+├── src/helpers          # Custom helper functions and libraries
 
-├── src/data          # Test data files and data objects
+├── src/data          # Test data files and data objects
 
-├── src/utils         # Utility functions and reusable modules
+├── src/utils          # Utility functions and reusable modules
 
 ## 5. Contribution
 
