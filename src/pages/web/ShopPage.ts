@@ -14,7 +14,9 @@ export class ShopPage extends GeneralPage {
   }
 
   async selectProductCategory(targetItem: string): Promise<void> {
-    const cat = this.page.getByRole("link", { name: targetItem, exact: true });
+    const cat = this.page
+      .getByRole("link", { name: targetItem, exact: true })
+      .first();
     await cat.click();
     await this.waitForPageLoadedCompletely();
   }
