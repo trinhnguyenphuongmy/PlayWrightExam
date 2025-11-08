@@ -14,7 +14,7 @@ npx playwright install
 This command installs Playwright browsers and necessary dependencies.
 
 ## 3. Run Tests Guideline
-> To Run Tests
+### To Run Tests
 
 Open the project folder in VS Code (or your preferred IDE).
 
@@ -25,7 +25,7 @@ Right-click on the file and select:
 Run Tests
 or Debug Tests
 
-> Run Multiple Tests in Parallel
+### Run Multiple Tests in Parallel
 
 Playwright supports parallel execution by default, allowing multiple test files or test cases to run simultaneously.
 
@@ -35,7 +35,7 @@ When you run:
 npx playwright test
 Playwright will automatically run multiple tests in parallel based on your system’s CPU cores.
 
-> Customizing Parallelism
+### Customizing Parallelism
 
 You can configure the number of workers (parallel threads) in your playwright.config.ts file, for example:
 
@@ -45,23 +45,18 @@ workers: 4
 Or override it directly from the command line:
 npx playwright test --workers=4
 
-> Run a test folder
+### Run a test folder
 
 To run all tests in the /tests/web folder in parallel:
 npx playwright test tests/web
 
 ## 4. Framework Structure
 
-├── playwright.config.ts  # Global Playwright configuration
-
+├── playwright.config.ts     # Global Playwright configuration
 ├── src/tests/web        # Test case spec TypeScript files
-
 ├── src/pages/web       # Page Object Model (POM) files for web pages
-
 ├── src/helpers        # Custom helper functions and libraries
-
 ├── src/data          # Test data files and data objects
-
 ├── src/utils         # Utility functions and reusable modules
 
 ## 5. Contribution
