@@ -33,6 +33,7 @@ Default Parallel Execution
 
 When you run:
 > npx playwright test
+
 Playwright will automatically run multiple tests in parallel based on your system’s CPU cores.
 
 ### Customizing Parallelism
