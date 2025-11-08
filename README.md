@@ -53,10 +53,15 @@ npx playwright test tests/web
 ## 4. Framework Structure
 
 ├── playwright.config.ts     # Global Playwright configuration
+
 ├── src/tests/web        # Test case spec TypeScript files
+
 ├── src/pages/web       # Page Object Model (POM) files for web pages
+
 ├── src/helpers        # Custom helper functions and libraries
+
 ├── src/data          # Test data files and data objects
+
 ├── src/utils         # Utility functions and reusable modules
 
 ## 5. Contribution
