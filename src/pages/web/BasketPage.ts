@@ -30,10 +30,6 @@ export class BasketPage extends GeneralPage {
     name: "Proceed to Checkout",
   });
 
-  // -----------------------
-  // ✅ Actions
-  // -----------------------
-
   async open() {
     await this.cartLnk.click();
   }
@@ -43,11 +39,7 @@ export class BasketPage extends GeneralPage {
   }
 
   /**
-   * ✅ Verify each product in cart matches expected Product[] list
-   *    - Name
-   *    - Unit Price
-   *    - Quantity
-   *    - Subtotal (unit price * quantity)
+   * Verify each product in cart matches expected Product[] list
    */
   async cartProductsMatch(expectedProducts: Product[]): Promise<boolean> {
     try {
@@ -100,7 +92,7 @@ export class BasketPage extends GeneralPage {
   }
 
   /**
-   * ✅ Reads tax value from basket summary
+   * Reads tax value from basket summary
    */
   async getTaxFromUI(): Promise<number> {
     if ((await this.taxAmountRow.count()) === 0) return 0;
@@ -111,7 +103,7 @@ export class BasketPage extends GeneralPage {
   }
 
   /**
-   * ✅ Verifies: Total = Subtotal + Tax
+   * Verifies: Total = Subtotal + Tax
    */
   async verifyCartTotals(subtotal: number, tax: number): Promise<boolean> {
     try {

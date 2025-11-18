@@ -120,7 +120,7 @@ export class ShopPage extends GeneralPage {
   }
 
   /**
-   * ✅ Verify: total = subtotal + tax
+   * Verify: total = subtotal + tax
    * subtotal is computed from product list
    * @param products Product[]
    */
